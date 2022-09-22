@@ -54,12 +54,12 @@ struct PlayMode : Mode {
 	Scene::Transform *blocks[num_blocks];
 	Scene::Transform *letters[num_blocks];
 
-	float rotation_speed = 0.0f;
+	float speed = 0.0f;
+	float remaining_time = 51.0f;
 
-	// glm::vec3 get_leg_tip_position();
-
-	// //music coming from the tip of the leg (as a demonstration):
-	// std::shared_ptr< Sound::PlayingSample > leg_tip_loop;
+	// background music
+	std::shared_ptr< Sound::PlayingSample > background_music;
+	float background_volume = 1.0f;
 	
 	//camera:
 	Scene::Camera *camera = nullptr;

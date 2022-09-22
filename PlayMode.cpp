@@ -32,7 +32,6 @@ Load< Scene > hexapod_scene(LoadTagDefault, []() -> Scene const * {
 		drawable.pipeline.type = mesh.type;
 		drawable.pipeline.start = mesh.start;
 		drawable.pipeline.count = mesh.count;
-
 	});
 });
 
@@ -83,6 +82,9 @@ Load< Sound::Sample > spring_sample(LoadTagDefault, []() -> Sound::Sample const 
 Load< Sound::Sample > static_sample(LoadTagDefault, []() -> Sound::Sample const * {
 	return new Sound::Sample(data_path("static.opus"));
 });
+Load< Sound::Sample > background_sample(LoadTagDefault, []() -> Sound::Sample const * {
+	return new Sound::Sample(data_path("background.opus"));
+});
 
 
 PlayMode::PlayMode() : scene(*blocks_scene) {
@@ -103,14 +105,11 @@ PlayMode::PlayMode() : scene(*blocks_scene) {
 		}
 	}
 
-	// for (int i = 0; i < shuffled_blocks.size(); i++) {
-	// 	std::cout << block_pairs[i] << "  ";
-	// }
-	// std::cout << std::endl;
-
 	//get pointer to camera for convenience:
 	if (scene.cameras.size() != 1) throw std::runtime_error("Expecting scene to have exactly one camera, but it has " + std::to_string(scene.cameras.size()));
 	camera = &scene.cameras.front();
+
+	background_music = Sound::play(*background_sample);
 }
 
 PlayMode::~PlayMode() {
@@ -203,21 +202,25 @@ bool PlayMode::handle_event(SDL_Event const &evt, glm::uvec2 const &window_size)
 }
 
 void PlayMode::update(float elapsed) {
-	// std::cout << first_block << " " << second_block << std::endl;
-	rotation_speed += elapsed * 2.0f;
+	speed += elapsed * 2.0f;
+	remaining_time -= elapsed;
+	std::cout << remaining_time << std::endl;
 
 	for (size_t i = 0; i < block_matches_found.size(); i++) {
 		int idx = block_matches_found[i];
-		blocks[idx]->position = blocks[idx]->position + glm::vec3(0.0f, 0.0f, rotation_speed);
-		letters[idx]->position = letters[idx]->position + glm::vec3(0.0f, 0.0f, rotation_speed);
+		blocks[idx]->position = blocks[idx]->position + glm::vec3(0.0f, 0.0f, speed);
+		letters[idx]->position = letters[idx]->position + glm::vec3(0.0f, 0.0f, speed);
 	}
 
 	for (size_t i = 0; i < selected_blocks.size(); i++) {
 		int idx = selected_blocks[i];
-		blocks[idx]->rotation = blocks[idx]->rotation * glm::vec3(0.0f, 0.0f, rotation_speed);
-		letters[idx]->rotation = letters[idx]->rotation * glm::vec3(0.0f, 0.0f, rotation_speed);
-		// blocks[idx]->scale = blocks[idx]->scale + glm::vec3(1.1f, 1.1f, 1.1f);
-		// letters[idx]->scale = letters[idx]->scale + glm::vec3(1.1f, 1.1f, 1.1f);
+		blocks[idx]->rotation = blocks[idx]->rotation * glm::vec3(0.0f, 0.0f, speed);
+		letters[idx]->rotation = letters[idx]->rotation * glm::vec3(0.0f, 0.0f, speed);
+	}
+
+	if (background_music->stopped) {
+		background_volume *= 2.0f;
+		background_music = Sound::play(*background_sample, background_volume);
 	}
 }
 
@@ -263,7 +266,18 @@ void PlayMode::draw(glm::uvec2 const &drawable_size) {
 			glm::vec3(H, 0.0f, 0.0f), glm::vec3(0.0f, H, 0.0f),
 			glm::u8vec4(0xff, 0xff, 0xff, 0x00));
 
-		if (pairs_found >= num_pairs) {	
+		lines.draw_text("TIME: " + std::to_string(remaining_time),
+			glm::vec3(-aspect + 35.4f * H, -1.0 + 0.1f * H, 0.0),
+			glm::vec3(H, 0.0f, 0.0f), glm::vec3(0.0f, H, 0.0f),
+			glm::u8vec4(0x00, 0x00, 0x00, 0x00));
+		lines.draw_text("TIME: " + std::to_string(remaining_time),
+			glm::vec3(-aspect + 35.4f * H + ofs, -1.0 + + 0.1f * H + ofs, 0.0),
+			glm::vec3(H, 0.0f, 0.0f), glm::vec3(0.0f, H, 0.0f),
+			glm::u8vec4(0xff, 0xff, 0xff, 0x00));
+
+		if (pairs_found >= num_pairs) {
+			background_volume = 1.0f;
+			background_music->set_volume(background_volume);
 			constexpr float Ht = .5f;
 			lines.draw_text("YOU WIN :)",
 				glm::vec3(-aspect + 1.85f * Ht, -1.0 + 1.6f * Ht, 0.0),
@@ -273,12 +287,17 @@ void PlayMode::draw(glm::uvec2 const &drawable_size) {
 				glm::vec3(-aspect + 1.85f * Ht + ofs, -1.0 + + 1.6f * Ht + ofs, 0.0),
 				glm::vec3(Ht, 0.0f, 0.0f), glm::vec3(0.0f, Ht, 0.0f),
 				glm::u8vec4(0xff, 0xff, 0xff, 0x00));
+		} else if (remaining_time <= 0.0f) {	
+			constexpr float Ht = .5f;
+			lines.draw_text("YOU LOSE :(",
+				glm::vec3(-aspect + 1.65f * Ht, -1.0 + 1.6f * Ht, 0.0),
+				glm::vec3(Ht, 0.0f, 0.0f), glm::vec3(0.0f, Ht, 0.0f),
+				glm::u8vec4(0x00, 0x00, 0x00, 0x00));
+			lines.draw_text("YOU LOSE :(",
+				glm::vec3(-aspect + 1.65f * Ht + ofs, -1.0 + + 1.6f * Ht + ofs, 0.0),
+				glm::vec3(Ht, 0.0f, 0.0f), glm::vec3(0.0f, Ht, 0.0f),
+				glm::u8vec4(0xff, 0x00, 0x00, 0x00));
 		}
 	}
 	GL_ERRORS();
 }
-
-// glm::vec3 PlayMode::get_leg_tip_position() {
-// 	//the vertex position here was read from the model in blender:
-// 	return lower_leg->make_local_to_world() * glm::vec4(-1.26137f, -11.861f, 0.0f, 1.0f);
-// }
