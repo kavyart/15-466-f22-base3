@@ -91,7 +91,7 @@ PlayMode::PlayMode() : scene(*blocks_scene) {
     std::mt19937 g(rd());
     std::shuffle(shuffled_blocks.begin(), shuffled_blocks.end(), g);
 
-	for (int i = 0; i < shuffled_blocks.size(); i++) {
+	for (size_t i = 0; i < shuffled_blocks.size(); i++) {
 		block_pairs[shuffled_blocks[i]] = i % num_pairs;
 	}
 
@@ -225,7 +225,7 @@ void PlayMode::update(float elapsed) {
 	
 	rotation_speed += elapsed * 2.0f;
 
-	for (int i = 0; i < block_matches_found.size(); i++) {
+	for (size_t i = 0; i < block_matches_found.size(); i++) {
 		int idx = block_matches_found[i];
 		blocks[idx]->position = blocks[idx]->position + glm::vec3(0.0f, 0.0f, rotation_speed);
 		letters[idx]->position = letters[idx]->position + glm::vec3(0.0f, 0.0f, rotation_speed);
