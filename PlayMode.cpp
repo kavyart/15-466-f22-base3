@@ -162,67 +162,48 @@ void PlayMode::found_match(int first, int second) {
 
 void PlayMode::reset_pair(int first, int second) {
 	// stop block rotations
+	blocks[first]->rotation = glm::vec3(0.0f, 0.0f, 0.0f);
+	letters[first]->rotation = glm::vec3(0.0f, 0.0f, 0.0f);
+	blocks[second]->rotation = glm::vec3(0.0f, 0.0f, 0.0f);
+	letters[second]->rotation = glm::vec3(0.0f, 0.0f, 0.0f);
 
+	// reset selected blocks
+	selected_blocks.clear();
 }
 
 bool PlayMode::handle_event(SDL_Event const &evt, glm::uvec2 const &window_size) {
 
 	if (evt.type == SDL_KEYDOWN) {
-		if (evt.key.keysym.sym == SDLK_ESCAPE) {
-			SDL_SetRelativeMouseMode(SDL_FALSE);
-			return true;
-		}
-
 		for (int i = 0; i < num_blocks; i++) {
 			if (evt.key.keysym.sym == block_keycodes[i]) {
 				if (!first_pressed) {
+					reset_pair(first_block, second_block);
 					if (block_pairs[i] >= 0) {
 						first_block = i;
+						selected_blocks.push_back(i);
 						play_block_sound(block_pairs[i]);
 						first_pressed = true;
 					}
 				} else {
 					if (block_pairs[i] >= 0 && i != first_block) {
 						second_block = i;
+						selected_blocks.push_back(i);
 						play_block_sound(block_pairs[i]);
 						if (block_pairs[first_block] == block_pairs[second_block]) {
 							found_match(first_block, second_block);
-						} else {
-							reset_pair(first_block, second_block);
 						}
 						first_pressed = false;
 					}
 				}
+				return true;
 			}
 		}
-
-	} else if (evt.type == SDL_MOUSEBUTTONDOWN) {
-		if (SDL_GetRelativeMouseMode() == SDL_FALSE) {
-			SDL_SetRelativeMouseMode(SDL_TRUE);
-			return true;
-		}
-	} else if (evt.type == SDL_MOUSEMOTION) {
-		if (SDL_GetRelativeMouseMode() == SDL_TRUE) {
-			glm::vec2 motion = glm::vec2(
-				evt.motion.xrel / float(window_size.y),
-				-evt.motion.yrel / float(window_size.y)
-			);
-			camera->transform->rotation = glm::normalize(
-				camera->transform->rotation
-				* glm::angleAxis(-motion.x * camera->fovy, glm::vec3(0.0f, 1.0f, 0.0f))
-				* glm::angleAxis(motion.y * camera->fovy, glm::vec3(1.0f, 0.0f, 0.0f))
-			);
-			return true;
-		}
 	}
-
 	return false;
 }
 
 void PlayMode::update(float elapsed) {
-
 	// std::cout << first_block << " " << second_block << std::endl;
-	
 	rotation_speed += elapsed * 2.0f;
 
 	for (size_t i = 0; i < block_matches_found.size(); i++) {
@@ -231,10 +212,13 @@ void PlayMode::update(float elapsed) {
 		letters[idx]->position = letters[idx]->position + glm::vec3(0.0f, 0.0f, rotation_speed);
 	}
 
-	
-	// blocks[0]->rotation = blocks[0]->rotation * glm::vec3(0.0f, 0.0f, rotation_speed);
-	// letters[0]->rotation = letters[0]->rotation * glm::vec3(0.0f, 0.0f, rotation_speed);
-
+	for (size_t i = 0; i < selected_blocks.size(); i++) {
+		int idx = selected_blocks[i];
+		blocks[idx]->rotation = blocks[idx]->rotation * glm::vec3(0.0f, 0.0f, rotation_speed);
+		letters[idx]->rotation = letters[idx]->rotation * glm::vec3(0.0f, 0.0f, rotation_speed);
+		// blocks[idx]->scale = blocks[idx]->scale + glm::vec3(1.1f, 1.1f, 1.1f);
+		// letters[idx]->scale = letters[idx]->scale + glm::vec3(1.1f, 1.1f, 1.1f);
+	}
 }
 
 void PlayMode::draw(glm::uvec2 const &drawable_size) {
@@ -278,6 +262,18 @@ void PlayMode::draw(glm::uvec2 const &drawable_size) {
 			glm::vec3(-aspect + 0.1f * H + ofs, -1.0 + + 0.1f * H + ofs, 0.0),
 			glm::vec3(H, 0.0f, 0.0f), glm::vec3(0.0f, H, 0.0f),
 			glm::u8vec4(0xff, 0xff, 0xff, 0x00));
+
+		if (pairs_found >= num_pairs) {	
+			constexpr float Ht = .5f;
+			lines.draw_text("YOU WIN :)",
+				glm::vec3(-aspect + 1.85f * Ht, -1.0 + 1.6f * Ht, 0.0),
+				glm::vec3(Ht, 0.0f, 0.0f), glm::vec3(0.0f, Ht, 0.0f),
+				glm::u8vec4(0x00, 0x00, 0x00, 0x00));
+			lines.draw_text("YOU WIN :)",
+				glm::vec3(-aspect + 1.85f * Ht + ofs, -1.0 + + 1.6f * Ht + ofs, 0.0),
+				glm::vec3(Ht, 0.0f, 0.0f), glm::vec3(0.0f, Ht, 0.0f),
+				glm::u8vec4(0xff, 0xff, 0xff, 0x00));
+		}
 	}
 	GL_ERRORS();
 }

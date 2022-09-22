@@ -28,8 +28,9 @@ struct PlayMode : Mode {
 	const static int num_blocks = 16;
 	const static int num_pairs = num_blocks / 2;
 	bool first_pressed = false;
-	int first_block = num_blocks;
-	int second_block = num_blocks;
+	int first_block = 0;
+	int second_block = 0;
+	std::vector<int> selected_blocks;
 	int block_pairs[num_blocks];
 	int pairs_found = 0;
 	std::vector<int> block_matches_found;
