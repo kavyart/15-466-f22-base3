@@ -1,4 +1,4 @@
-# Sound Matching Game
+# Clash of Sounds
 
 Author: Kavya Tummalapalli
 
