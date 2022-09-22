@@ -232,8 +232,8 @@ void PlayMode::update(float elapsed) {
 	}
 
 	
-	blocks[0]->rotation = blocks[0]->rotation * glm::vec3(0.0f, 0.0f, rotation_speed);
-	letters[0]->rotation = letters[0]->rotation * glm::vec3(0.0f, 0.0f, rotation_speed);
+	// blocks[0]->rotation = blocks[0]->rotation * glm::vec3(0.0f, 0.0f, rotation_speed);
+	// letters[0]->rotation = letters[0]->rotation * glm::vec3(0.0f, 0.0f, rotation_speed);
 
 }
 
